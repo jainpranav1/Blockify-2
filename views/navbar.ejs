@@ -22,44 +22,22 @@
         class="collapse navbar-collapse" 
         id="navbarNav">
             <ul class="navbar-nav">
-                <% if (is_auth) { %>
-                    <li class="nav-item">
-                        <a href="/dashboard" class="nav-link">
-                            Dashboard
-                        </a>
-                    </li>
-                <% } %>
+                <li class="nav-item">
+                    <a href="/dashboard" class="nav-link">
+                        Dashboard
+                    </a>
+                </li>
                 </li>
                 <li class="nav-item">
-                    <a href="/" class="nav-link">
+                    <a href="/about" class="nav-link">
                         About
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/" class="nav-link">
+                    <a href="/contact" class="nav-link">
                         Contact
                     </a>
                 </li>
-            </ul>
-            <ul class="navbar-nav ms-auto">
-                <% if (!is_auth) { %>
-                    <li class="nav-item">
-                        <a href="/login" class="nav-link">
-                            Login
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/sign_up" class="nav-link">
-                            Sign Up
-                        </a>
-                    </li>
-                <% } else { %>
-                    <li class="nav-item">
-                        <form action="/logout?_method=DELETE" method="POST">
-                            <button class="btn btn-primary" type="submit">Log Out</button>
-                        </form>
-                    </li>
-                <% } %>
             </ul>
         </div>
     </div>
