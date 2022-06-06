@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockify</title>
+    <%- include('../bootstrap') %>
+
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.14.305/build/pdf.min.js"></script>
+</head>
+
+<body>
+    <%- include('../navbar') %>
+
+    <div class="text-center">
+        <h1 class="mb-3"><%= image.image_name %></h1>
+        <div id="canvases">
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('mousedown', function (event) {
+        if (event.detail > 1) {
+            event.preventDefault();
+        }
+        }, false);
+
+        pdfjsLib.getDocument("../../images/<%= image.multer_name + image.extension %>").promise.then(doc => {
+            
+            var bboxes = JSON.parse("<%= bboxes %>".replace(/&#34;/g,'"'));
+            let num_pages = doc._pdfInfo.numPages;
+            let canvases = document.getElementById("canvases");
+
+            for (let i = 1; i < num_pages + 1; ++i) {
+                let canvas = document.createElement("canvas");
+                canvas.id = "canvas_" + i;
+                canvas.style = "border: 1px solid black;"
+                canvases.appendChild(canvas);
+                canvases.appendChild(document.createElement("br"));
+            }
+
+            for (let i = 1; i < num_pages + 1; ++i) {
+                doc.getPage(i).then((page) => {
+
+                    let curr_canvas = document.getElementById("canvas_" + i);
+                    let ctx = curr_canvas.getContext("2d");
+
+                    let scale = 1;
+                    let viewport = page.getViewport({ scale });
+                    curr_canvas.height = viewport.height;
+                    curr_canvas.width = viewport.width;
+
+                    page.render({
+                        canvasContext: ctx,
+                        viewport: viewport
+                    }).promise.then(function () {
+
+                        var temp_canvas = document.createElement('canvas');
+                        var temp_ctx = temp_canvas.getContext('2d');
+                        temp_canvas.height = curr_canvas.height;
+                        temp_canvas.width = curr_canvas.width;
+                        temp_ctx.drawImage(curr_canvas, 0, 0);
+
+                        bboxes["page_" + i].forEach(bbox => {
+                            ctx.fillRect(
+                                bbox[0].x * curr_canvas.width,
+                                bbox[0].y * curr_canvas.height,
+                                (bbox[2].x - bbox[0].x) * curr_canvas.width,
+                                (bbox[2].y - bbox[0].y) * curr_canvas.height
+                            );
+                            bbox.transparent = false;
+                        })
+
+                        curr_canvas.addEventListener("click", update_canvas, false);
+                        
+                        function update_canvas(event) {
+                            
+                            ctx.drawImage(temp_canvas, 0, 0);
+
+                            var rect = curr_canvas.getBoundingClientRect();
+                            let mouseX = event.clientX - rect.left;
+                            let mouseY = event.clientY - rect.top;
+
+                            bboxes["page_" + i].forEach(bbox => {
+                                if ((bbox[0].x * curr_canvas.width <= mouseX) && (bbox[2].x * curr_canvas.width >= mouseX) && (bbox[0].y * curr_canvas.height <= mouseY) && (bbox[2].y * curr_canvas.height >= mouseY)) {
+                                    
+                                    if (bbox.transparent) {
+                                        ctx.fillRect(
+                                            bbox[0].x * curr_canvas.width,
+                                            bbox[0].y * curr_canvas.height,
+                                            (bbox[2].x - bbox[0].x) * curr_canvas.width,
+                                            (bbox[2].y - bbox[0].y) * curr_canvas.height
+                                        )  
+                                        bbox.transparent = false;                          
+                                    }
+                                    else {
+                                        bbox.transparent = true;
+                                    }
+                                }
+                                else {
+                                    if (!bbox.transparent) {                   
+                                        ctx.fillRect(
+                                            bbox[0].x * curr_canvas.width,
+                                            bbox[0].y * curr_canvas.height,
+                                            (bbox[2].x - bbox[0].x) * curr_canvas.width,
+                                            (bbox[2].y - bbox[0].y) * curr_canvas.height
+                                        )
+                                    }
+                                }
+                            })
+                        }
+                    })
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

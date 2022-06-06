@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockify</title>
+    <%- include('../bootstrap') %>
+
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.14.305/build/pdf.min.js"></script>
+</head>
+
+<body>
+    <%- include('../navbar') %>
+
+    <div class="text-center">
+        <h1 class="mb-3"><%= image.image_name %></h1>
+        <canvas id="canvas" style="border: 1px solid black;"></canvas>
+    </div>
+
+    <script>
+        document.addEventListener('mousedown', function (event) {
+        if (event.detail > 1) {
+            event.preventDefault();
+        }
+        }, false);
+
+        let bboxes = JSON.parse("<%= bboxes %>".replace(/&#34;/g,'"'));
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext('2d');
+
+        let img = new Image();
+        img.src = "../../images/<%= image.multer_name + image.extension %>";
+        img.onload = function() {
+
+            canvas.width = this.width;
+            canvas.height = this.height;
+            ctx.drawImage(img, 0, 0);
+            bboxes.forEach(bbox => {
+                ctx.fillRect(bbox[0].x, bbox[0].y, bbox[2].x - bbox[0].x, bbox[2].y - bbox[0].y);
+                bbox.transparent = false;
+            })
+            canvas.addEventListener("click", update_canvas, false);
+        };
+
+        function update_canvas(event) {
+            var rect = canvas.getBoundingClientRect();
+            let mouseX = event.clientX - rect.left;
+            let mouseY = event.clientY - rect.top;
+            ctx.drawImage(img, 0, 0);
+            bboxes.forEach(bbox => {
+                if ((bbox[0].x <= mouseX) && (bbox[2].x >= mouseX) && (bbox[0].y <= mouseY) && (bbox[2].y >= mouseY)) {
+                    if (bbox.transparent) {
+                        ctx.fillRect(bbox[0].x, bbox[0].y, bbox[2].x - bbox[0].x, bbox[2].y - bbox[0].y);
+                        bbox.transparent = false;                          
+                    }
+                    else {
+                        bbox.transparent = true;
+                    }
+                }
+                else {
+                    if (!bbox.transparent) {                   
+                        ctx.fillRect(bbox[0].x, bbox[0].y, bbox[2].x - bbox[0].x, bbox[2].y - bbox[0].y);
+                    }
+                }
+            })
+        }
+    </script>
+</body>
+
+</html>
